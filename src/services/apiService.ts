@@ -16,14 +16,14 @@ import {
   CreatePostRequest,
   FriendRequest,
   FriendRequestRequest
-} from '../types/api';
+} from '@/types/api';
 
 class ApiService {
   private api: AxiosInstance;
 
   constructor() {
     this.api = axios.create({
-      baseURL: 'http://localhost:8080/api/v1',
+      baseURL: '/api',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -69,7 +69,9 @@ class ApiService {
             }
           } catch (refreshError) {
             tokenManager.clearTokens();
-            window.location.href = '/login';
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
           }
         }
 

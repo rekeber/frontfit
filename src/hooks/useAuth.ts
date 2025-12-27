@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiService } from '../services/apiService';
-import { tokenManager } from '../services/tokenManager';
-import { User, LoginRequest, RegisterRequest } from '../types/api';
+import { apiService } from '@/services/apiService';
+import { tokenManager } from '@/services/tokenManager';
+import { User, LoginRequest, RegisterRequest } from '@/types/api';
 
 interface AuthState {
   isLoggedIn: boolean;

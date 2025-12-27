@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Container,
   Paper,
@@ -19,24 +22,23 @@ import {
   VisibilityOff,
   FitnessCenter,
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
-const Login: React.FC = () => {
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   
   const { login, isLoading, error, clearError, isLoggedIn } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   // Redirect if already logged in
   useEffect(() => {
     if (isLoggedIn) {
-      navigate('/dashboard');
+      router.push('/dashboard');
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, router]);
 
   // Clear error when component mounts
   useEffect(() => {
@@ -79,7 +81,7 @@ const Login: React.FC = () => {
     const result = await login({ email: email.trim(), password });
     
     if (result.success) {
-      navigate('/dashboard');
+      router.push('/dashboard');
     }
   };
 
@@ -213,7 +215,7 @@ const Login: React.FC = () => {
                 variant="body2"
                 onClick={(e) => {
                   e.preventDefault();
-                  navigate('/register');
+                  router.push('/register');
                 }}
                 sx={{ textDecoration: 'none' }}
                 disabled={isLoading}
@@ -226,6 +228,4 @@ const Login: React.FC = () => {
       </Box>
     </Container>
   );
-};
-
-export default Login;
+}

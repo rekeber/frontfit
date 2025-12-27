@@ -1,4 +1,7 @@
-import { useState } from 'react'
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Drawer,
@@ -16,7 +19,7 @@ import {
   Badge,
   useTheme,
   useMediaQuery,
-} from '@mui/material'
+} from '@mui/material';
 import {
   Menu as MenuIcon,
   Dashboard,
@@ -24,18 +27,16 @@ import {
   Restaurant,
   People,
   Person,
-  Message,
+  Email,
   Logout,
   Notifications,
-} from '@mui/icons-material'
-import { useLocation, useNavigate } from 'react-router-dom'
+} from '@mui/icons-material';
+import { useAuth } from '@/hooks/useAuth';
 
-import { useAuth } from '../../hooks/useAuth'
+const drawerWidth = 280;
 
-const drawerWidth = 280
-
-interface LayoutProps {
-  children: React.ReactNode
+interface MainLayoutProps {
+  children: React.ReactNode;
 }
 
 const menuItems = [
@@ -43,33 +44,32 @@ const menuItems = [
   { text: 'Ejercicios', icon: <FitnessCenter />, path: '/exercise' },
   { text: 'Nutrición', icon: <Restaurant />, path: '/nutrition' },
   { text: 'Social', icon: <People />, path: '/social' },
-  { text: 'Mensajes', icon: <Message />, path: '/messages', badge: 3 },
+  { text: 'Mensajes', icon: <Email />, path: '/messages', badge: 3 },
   { text: 'Perfil', icon: <Person />, path: '/profile' },
-]
+];
 
-export default function Layout({ children }: LayoutProps) {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { user, logout } = useAuth()
+export default function MainLayout({ children }: MainLayoutProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen)
-  }
+    setMobileOpen(!mobileOpen);
+  };
 
   const handleNavigation = (path: string) => {
-    navigate(path)
+    router.push(path);
     if (isMobile) {
-      setMobileOpen(false)
+      setMobileOpen(false);
     }
-  }
+  };
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
+    await logout();
+    router.push('/login');
+  };
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -99,17 +99,13 @@ export default function Layout({ children }: LayoutProps) {
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
             <ListItemButton
-              selected={location.pathname === item.path}
               onClick={() => handleNavigation(item.path)}
               sx={{
                 borderRadius: 2,
                 mx: 1,
-                '&.Mui-selected': {
-                  backgroundColor: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'primary.light',
                   color: 'white',
-                  '&:hover': {
-                    backgroundColor: 'primary.dark',
-                  },
                   '& .MuiListItemIcon-root': {
                     color: 'white',
                   },
@@ -159,7 +155,7 @@ export default function Layout({ children }: LayoutProps) {
         </ListItem>
       </List>
     </Box>
-  )
+  );
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -185,7 +181,7 @@ export default function Layout({ children }: LayoutProps) {
           </IconButton>
           
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {menuItems.find(item => item.path === location.pathname)?.text || 'FitLife'}
+            FitLife
           </Typography>
 
           <IconButton color="inherit">
@@ -232,7 +228,6 @@ export default function Layout({ children }: LayoutProps) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
           width: { md: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
           backgroundColor: 'background.default',
@@ -242,5 +237,5 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </Box>
     </Box>
-  )
+  );
 }

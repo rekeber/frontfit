@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   Box,
@@ -9,10 +11,6 @@ import {
   CircularProgress,
   Button,
   Avatar,
-  Chip,
-  Stack,
-  Paper,
-  IconButton,
 } from '@mui/material';
 import {
   FitnessCenter,
@@ -22,54 +20,55 @@ import {
   Analytics,
   Whatshot,
   Star,
-  TrendingUp,
-  EmojiEvents,
   Timeline,
 } from '@mui/icons-material';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
+import MainLayout from '@/components/Layout/MainLayout';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Grid container spacing={3}>
-        {/* Welcome Card */}
-        <Grid item xs={12}>
-          <WelcomeCard userName={user?.name || 'Usuario'} />
-        </Grid>
+    <MainLayout>
+      <Box sx={{ p: 3 }}>
+        <Grid container spacing={3}>
+          {/* Welcome Card */}
+          <Grid item xs={12}>
+            <WelcomeCard userName={user?.name || 'Usuario'} />
+          </Grid>
 
-        {/* Quick Stats */}
-        <Grid item xs={12}>
-          <QuickStatsRow />
-        </Grid>
+          {/* Quick Stats */}
+          <Grid item xs={12}>
+            <QuickStatsRow />
+          </Grid>
 
-        {/* Calorie Progress */}
-        <Grid item xs={12} md={8}>
-          <CalorieProgressCard />
-        </Grid>
+          {/* Calorie Progress */}
+          <Grid item xs={12} md={8}>
+            <CalorieProgressCard />
+          </Grid>
 
-        {/* Today's Summary */}
-        <Grid item xs={12} md={4}>
-          <TodaySummaryCard />
-        </Grid>
+          {/* Today's Summary */}
+          <Grid item xs={12} md={4}>
+            <TodaySummaryCard />
+          </Grid>
 
-        {/* Macronutrients */}
-        <Grid item xs={12} md={6}>
-          <MacronutrientsCard />
-        </Grid>
+          {/* Macronutrients */}
+          <Grid item xs={12} md={6}>
+            <MacronutrientsCard />
+          </Grid>
 
-        {/* Recent Activities */}
-        <Grid item xs={12} md={6}>
-          <RecentActivitiesCard />
-        </Grid>
+          {/* Recent Activities */}
+          <Grid item xs={12} md={6}>
+            <RecentActivitiesCard />
+          </Grid>
 
-        {/* Achievements */}
-        <Grid item xs={12}>
-          <AchievementsCard />
+          {/* Achievements */}
+          <Grid item xs={12}>
+            <AchievementsCard />
+          </Grid>
         </Grid>
-      </Grid>
-    </Box>
+      </Box>
+    </MainLayout>
   );
 };
 
@@ -228,7 +227,7 @@ const TodaySummaryCard: React.FC = () => (
         Resumen de Hoy
       </Typography>
       
-      <Stack spacing={2}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <LocalDrink color="primary" />
@@ -260,7 +259,7 @@ const TodaySummaryCard: React.FC = () => (
           </Box>
           <Typography variant="body2" fontWeight="bold">420 cal</Typography>
         </Box>
-      </Stack>
+      </Box>
     </CardContent>
   </Card>
 );
@@ -355,7 +354,7 @@ const RecentActivitiesCard: React.FC = () => {
           <Button size="small">Ver todas</Button>
         </Box>
         
-        <Stack spacing={2}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {activities.map((activity, index) => (
             <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Avatar sx={{ bgcolor: 'primary.light', width: 40, height: 40 }}>
@@ -374,7 +373,7 @@ const RecentActivitiesCard: React.FC = () => {
               </Typography>
             </Box>
           ))}
-        </Stack>
+        </Box>
       </CardContent>
     </Card>
   );

@@ -7,6 +7,8 @@ class TokenManager {
   private readonly USER_NAME_KEY = 'fitlife_user_name';
 
   saveTokens(accessToken: string, refreshToken: string, expiresIn: number): void {
+    if (typeof window === 'undefined') return;
+    
     const expiryTime = Date.now() + (expiresIn * 1000);
     
     localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
@@ -15,6 +17,8 @@ class TokenManager {
   }
 
   getAccessToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    
     const token = localStorage.getItem(this.ACCESS_TOKEN_KEY);
     const expiryTime = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
     
@@ -26,34 +30,45 @@ class TokenManager {
   }
 
   getRefreshToken(): string | null {
+    if (typeof window === 'undefined') return null;
     return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
 
   isTokenValid(): boolean {
+    if (typeof window === 'undefined') return false;
+    
     const expiryTime = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
     return expiryTime ? Date.now() < parseInt(expiryTime) : false;
   }
 
   saveUserInfo(userId: number, email: string, name: string): void {
+    if (typeof window === 'undefined') return;
+    
     localStorage.setItem(this.USER_ID_KEY, userId.toString());
     localStorage.setItem(this.USER_EMAIL_KEY, email);
     localStorage.setItem(this.USER_NAME_KEY, name);
   }
 
   getUserId(): number | null {
+    if (typeof window === 'undefined') return null;
+    
     const userId = localStorage.getItem(this.USER_ID_KEY);
     return userId ? parseInt(userId) : null;
   }
 
   getUserEmail(): string | null {
+    if (typeof window === 'undefined') return null;
     return localStorage.getItem(this.USER_EMAIL_KEY);
   }
 
   getUserName(): string | null {
+    if (typeof window === 'undefined') return null;
     return localStorage.getItem(this.USER_NAME_KEY);
   }
 
   clearTokens(): void {
+    if (typeof window === 'undefined') return;
+    
     localStorage.removeItem(this.ACCESS_TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.TOKEN_EXPIRY_KEY);

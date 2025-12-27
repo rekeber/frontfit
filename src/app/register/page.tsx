@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Container,
   Paper,
@@ -16,8 +19,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
-  Stack,
 } from '@mui/material';
 import {
   Email,
@@ -26,14 +27,10 @@ import {
   VisibilityOff,
   Person,
   FitnessCenter,
-  Height,
-  MonitorWeight,
-  DateRange,
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
-const Register: React.FC = () => {
+export default function RegisterPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -52,14 +49,14 @@ const Register: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const { register, isLoading, error, clearError, isLoggedIn } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   // Redirect if already logged in
   useEffect(() => {
     if (isLoggedIn) {
-      navigate('/dashboard');
+      router.push('/dashboard');
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, router]);
 
   // Clear error when component mounts
   useEffect(() => {
@@ -182,7 +179,7 @@ const Register: React.FC = () => {
     });
     
     if (result.success) {
-      navigate('/dashboard');
+      router.push('/dashboard');
     }
   };
 
@@ -236,11 +233,6 @@ const Register: React.FC = () => {
 
           {/* Register Form */}
           <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-            {/* Personal Information */}
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-              Información Personal
-            </Typography>
-            
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
@@ -294,23 +286,9 @@ const Register: React.FC = () => {
                   error={!!errors.age}
                   helperText={errors.age}
                   disabled={isLoading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <DateRange />
-                      </InputAdornment>
-                    ),
-                  }}
                 />
               </Grid>
-            </Grid>
 
-            {/* Physical Information */}
-            <Typography variant="h6" sx={{ mb: 2, mt: 3, fontWeight: 'bold' }}>
-              Información Física
-            </Typography>
-            
-            <Grid container spacing={2}>
               <Grid item xs={12} sm={4}>
                 <TextField
                   required
@@ -322,13 +300,6 @@ const Register: React.FC = () => {
                   error={!!errors.height}
                   helperText={errors.height}
                   disabled={isLoading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Height />
-                      </InputAdornment>
-                    ),
-                  }}
                 />
               </Grid>
               
@@ -343,13 +314,6 @@ const Register: React.FC = () => {
                   error={!!errors.currentWeight}
                   helperText={errors.currentWeight}
                   disabled={isLoading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <MonitorWeight />
-                      </InputAdornment>
-                    ),
-                  }}
                 />
               </Grid>
               
@@ -364,23 +328,9 @@ const Register: React.FC = () => {
                   error={!!errors.targetWeight}
                   helperText={errors.targetWeight}
                   disabled={isLoading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <MonitorWeight />
-                      </InputAdornment>
-                    ),
-                  }}
                 />
               </Grid>
-            </Grid>
 
-            {/* Goals and Activity */}
-            <Typography variant="h6" sx={{ mb: 2, mt: 3, fontWeight: 'bold' }}>
-              Objetivos y Actividad
-            </Typography>
-            
-            <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel>Objetivo</InputLabel>
@@ -416,14 +366,7 @@ const Register: React.FC = () => {
                   </Select>
                 </FormControl>
               </Grid>
-            </Grid>
 
-            {/* Security */}
-            <Typography variant="h6" sx={{ mb: 2, mt: 3, fontWeight: 'bold' }}>
-              Seguridad
-            </Typography>
-            
-            <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   required
@@ -521,7 +464,7 @@ const Register: React.FC = () => {
                 variant="body2"
                 onClick={(e) => {
                   e.preventDefault();
-                  navigate('/login');
+                  router.push('/login');
                 }}
                 sx={{ textDecoration: 'none' }}
                 disabled={isLoading}
@@ -534,6 +477,4 @@ const Register: React.FC = () => {
       </Box>
     </Container>
   );
-};
-
-export default Register;
+}
