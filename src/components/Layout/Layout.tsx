@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { useAuthStore } from '../../store/authStore'
+import { useAuth } from '../../hooks/useAuth'
 
 const drawerWidth = 280
 
@@ -53,7 +53,7 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const { user, logout } = useAuth()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -66,8 +66,8 @@ export default function Layout({ children }: LayoutProps) {
     }
   }
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/login')
   }
 
@@ -80,15 +80,15 @@ export default function Layout({ children }: LayoutProps) {
         </Typography>
         <Avatar
           sx={{ width: 64, height: 64, mx: 'auto', mb: 1 }}
-          src={user?.profileImage}
+          src={user?.profileImageUrl}
         >
           {user?.name?.charAt(0).toUpperCase()}
         </Avatar>
         <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-          {user?.name}
+          {user?.name || 'Usuario'}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {user?.email}
+          {user?.email || 'email@example.com'}
         </Typography>
       </Box>
 

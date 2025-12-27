@@ -1,27 +1,40 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Box } from '@mui/material'
+import { Box, CircularProgress } from '@mui/material'
 
-import { useAuthStore } from './store/authStore'
+import { useAuth } from './hooks/useAuth'
 import Layout from './components/Layout/Layout'
-import LoginPage from './pages/Auth/LoginPage'
-import RegisterPage from './pages/Auth/RegisterPage'
+import Login from './pages/Login'
+import Register from './pages/Register'
 import DashboardPage from './pages/Dashboard/DashboardPage'
 import ExercisePage from './pages/Exercise/ExercisePage'
 import NutritionPage from './pages/Nutrition/NutritionPage'
 import SocialPage from './pages/Social/SocialPage'
 import ProfilePage from './pages/Profile/ProfilePage'
 import MessagesPage from './pages/Messages/MessagesPage'
-import ChatPage from './pages/Messages/ChatPage'
 
 function App() {
-  const { isAuthenticated } = useAuthStore()
+  const { isLoggedIn, isLoading } = useAuth()
 
-  if (!isAuthenticated) {
+  // Show loading spinner while checking auth status
+  if (isLoading) {
+    return (
+      <Box sx={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (!isLoggedIn) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Box>
@@ -38,7 +51,6 @@ function App() {
         <Route path="/social" element={<SocialPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/messages" element={<MessagesPage />} />
-        <Route path="/messages/:chatId" element={<ChatPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Layout>

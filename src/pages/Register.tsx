@@ -90,6 +90,8 @@ const Register: React.FC = () => {
 
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre es requerido';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
     }
 
     if (!formData.email) {
@@ -100,8 +102,8 @@ const Register: React.FC = () => {
 
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -144,10 +146,20 @@ const Register: React.FC = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+    
+    // Clear server error when user starts typing
+    if (error) {
+      clearError();
+    }
   };
 
   const handleSelectChange = (field: string) => (e: any) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    
+    // Clear server error when user changes selection
+    if (error) {
+      clearError();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -175,7 +187,7 @@ const Register: React.FC = () => {
   };
 
   const isFormValid = Object.values(formData).every(value => value !== '') && 
-                     Object.keys(errors).length === 0;
+                     Object.values(errors).every(error => error === '');
 
   return (
     <Container component="main" maxWidth="md">
@@ -213,7 +225,11 @@ const Register: React.FC = () => {
 
           {/* Error Alert */}
           {error && (
-            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+            <Alert 
+              severity="error" 
+              sx={{ width: '100%', mb: 2 }}
+              onClose={() => clearError()}
+            >
               {error}
             </Alert>
           )}
@@ -486,6 +502,18 @@ const Register: React.FC = () => {
                 'Crear Cuenta'
               )}
             </Button>
+            
+            {error && (
+              <Button
+                fullWidth
+                variant="outlined"
+                sx={{ mb: 2, py: 1.5 }}
+                onClick={() => clearError()}
+                disabled={isLoading}
+              >
+                Limpiar Error y Reintentar
+              </Button>
+            )}
             
             <Box sx={{ textAlign: 'center' }}>
               <Link

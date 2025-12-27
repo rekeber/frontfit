@@ -23,14 +23,41 @@ export const useAuth = () => {
     const checkAuthStatus = async () => {
       try {
         if (tokenManager.isLoggedIn()) {
-          // Try to get user profile to verify token is still valid
-          const response = await apiService.getUserProfile();
-          setAuthState({
-            isLoggedIn: true,
-            user: response.data,
-            isLoading: false,
-            error: null,
-          });
+          // Create a basic user object from stored info
+          const userId = tokenManager.getUserId();
+          const userEmail = tokenManager.getUserEmail();
+          const userName = tokenManager.getUserName();
+          
+          if (userId && userEmail && userName) {
+            const basicUser: User = {
+              id: userId,
+              email: userEmail,
+              name: userName,
+              age: 0,
+              height: 0,
+              currentWeight: 0,
+              targetWeight: 0,
+              goal: '',
+              activityLevel: '',
+              isActive: true,
+              emailVerified: true,
+              streakDays: 0,
+              totalPoints: 0,
+              totalWeightLost: 0,
+              createdAt: new Date().toISOString(),
+              allergies: [],
+              dietaryRestrictions: []
+            };
+            
+            setAuthState({
+              isLoggedIn: true,
+              user: basicUser,
+              isLoading: false,
+              error: null,
+            });
+          } else {
+            throw new Error('Missing user info');
+          }
         } else {
           setAuthState({
             isLoggedIn: false,
@@ -40,6 +67,7 @@ export const useAuth = () => {
           });
         }
       } catch (error) {
+        console.error('Auth check failed:', error);
         // Token might be invalid, clear it
         tokenManager.clearTokens();
         setAuthState({
@@ -51,7 +79,9 @@ export const useAuth = () => {
       }
     };
 
-    checkAuthStatus();
+    // Add a small delay to prevent flash of loading state
+    const timer = setTimeout(checkAuthStatus, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const login = useCallback(async (credentials: LoginRequest) => {
@@ -74,7 +104,8 @@ export const useAuth = () => {
 
       return { success: true };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Error al iniciar sesión';
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Error al iniciar sesión';
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
@@ -105,7 +136,28 @@ export const useAuth = () => {
 
       return { success: true };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Error al crear la cuenta';
+      console.error('Register error:', error);
+      
+      let errorMessage = 'Error al crear la cuenta';
+      
+      if (error.response?.status === 400) {
+        // Validation errors
+        const validationErrors = error.response?.data?.errors;
+        if (validationErrors && Array.isArray(validationErrors)) {
+          errorMessage = validationErrors.join(', ');
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else {
+          errorMessage = 'Datos de registro inválidos. Verifica que la contraseña tenga al menos 8 caracteres y el nombre al menos 2 caracteres.';
+        }
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Acceso denegado. Verifica los datos del formulario.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setAuthState(prev => ({
         ...prev,
         isLoading: false,

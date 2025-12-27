@@ -57,6 +57,11 @@ const Login: React.FC = () => {
     } else {
       setEmailError('');
     }
+    
+    // Clear server error when user starts typing
+    if (error) {
+      clearError();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,7 +120,11 @@ const Login: React.FC = () => {
 
           {/* Error Alert */}
           {error && (
-            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+            <Alert 
+              severity="error" 
+              sx={{ width: '100%', mb: 2 }}
+              onClose={() => clearError()}
+            >
               {error}
             </Alert>
           )}
@@ -155,7 +164,13 @@ const Login: React.FC = () => {
               id="password"
               autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                // Clear server error when user starts typing
+                if (error) {
+                  clearError();
+                }
+              }}
               disabled={isLoading}
               InputProps={{
                 startAdornment: (
