@@ -30,6 +30,10 @@ import {
   Email,
   Logout,
   Notifications,
+  EmojiEvents,
+  MonetizationOn,
+  CameraAlt,
+  VideoCall,
 } from '@mui/icons-material';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -44,8 +48,15 @@ const menuItems = [
   { text: 'Ejercicios', icon: <FitnessCenter />, path: '/exercise' },
   { text: 'Nutrición', icon: <Restaurant />, path: '/nutrition' },
   { text: 'Social', icon: <People />, path: '/social' },
+  { text: 'Recompensas', icon: <EmojiEvents />, path: '/gamification', badge: 2 },
+  { text: 'Creador', icon: <MonetizationOn />, path: '/creator' },
   { text: 'Mensajes', icon: <Email />, path: '/messages', badge: 3 },
   { text: 'Perfil', icon: <Person />, path: '/profile' },
+];
+
+const cameraItems = [
+  { text: 'Escanear Comida', icon: <CameraAlt />, path: '/food-camera' },
+  { text: 'Analizar Ejercicio', icon: <VideoCall />, path: '/workout-camera' },
 ];
 
 export default function MainLayout({ children }: MainLayoutProps) {
@@ -120,6 +131,44 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 ) : (
                   item.icon
                 )}
+              </ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+
+      <Divider />
+
+      {/* AI Camera Features */}
+      <Box sx={{ px: 2, py: 1 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+          🤖 AI FEATURES
+        </Typography>
+      </Box>
+      <List sx={{ px: 1 }}>
+        {cameraItems.map((item) => (
+          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              onClick={() => handleNavigation(item.path)}
+              sx={{
+                borderRadius: 2,
+                mx: 1,
+                bgcolor: 'success.light',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'success.main',
+                  '& .MuiListItemIcon-root': {
+                    color: 'white',
+                  },
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'white',
+                },
+              }}
+            >
+              <ListItemIcon>
+                {item.icon}
               </ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>

@@ -23,42 +23,64 @@ export const useAuth = () => {
     const checkAuthStatus = async () => {
       try {
         if (tokenManager.isLoggedIn()) {
-          // Create a basic user object from stored info
-          const userId = tokenManager.getUserId();
-          const userEmail = tokenManager.getUserEmail();
-          const userName = tokenManager.getUserName();
+          console.log('Token found, fetching user profile from backend...');
           
-          if (userId && userEmail && userName) {
-            const basicUser: User = {
-              id: userId,
-              email: userEmail,
-              name: userName,
-              age: 0,
-              height: 0,
-              currentWeight: 0,
-              targetWeight: 0,
-              goal: '',
-              activityLevel: '',
-              isActive: true,
-              emailVerified: true,
-              streakDays: 0,
-              totalPoints: 0,
-              totalWeightLost: 0,
-              createdAt: new Date().toISOString(),
-              allergies: [],
-              dietaryRestrictions: []
-            };
+          // Fetch real user data from backend instead of using hardcoded values
+          try {
+            const userResponse = await apiService.getUserProfile();
+            const realUser = userResponse.data;
+            
+            console.log('Real user data fetched:', realUser);
             
             setAuthState({
               isLoggedIn: true,
-              user: basicUser,
+              user: realUser,
               isLoading: false,
               error: null,
             });
-          } else {
-            throw new Error('Missing user info');
+          } catch (profileError) {
+            console.error('Failed to fetch user profile:', profileError);
+            
+            // If profile fetch fails, fall back to basic user info from token
+            const userId = tokenManager.getUserId();
+            const userEmail = tokenManager.getUserEmail();
+            const userName = tokenManager.getUserName();
+            
+            if (userId && userEmail && userName) {
+              const basicUser: User = {
+                id: userId,
+                email: userEmail,
+                name: userName,
+                age: 0,
+                height: 0,
+                currentWeight: 0,
+                targetWeight: 0,
+                goal: '',
+                activityLevel: '',
+                isActive: true,
+                emailVerified: true,
+                streakDays: 0,
+                totalPoints: 0,
+                totalWeightLost: 0,
+                createdAt: new Date().toISOString(),
+                allergies: [],
+                dietaryRestrictions: []
+              };
+              
+              console.log('Using fallback basic user data:', basicUser);
+              
+              setAuthState({
+                isLoggedIn: true,
+                user: basicUser,
+                isLoading: false,
+                error: null,
+              });
+            } else {
+              throw new Error('Missing user info and profile fetch failed');
+            }
           }
         } else {
+          console.log('No token found, user not logged in');
           setAuthState({
             isLoggedIn: false,
             user: null,

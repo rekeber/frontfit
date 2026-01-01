@@ -1,7 +1,7 @@
 class TokenManager {
   private readonly ACCESS_TOKEN_KEY = 'fitlife_access_token';
   private readonly REFRESH_TOKEN_KEY = 'fitlife_refresh_token';
-  private readonly TOKEN_EXPIRY_KEY = 'fitlife_token_expiry';
+  private readonly EXPIRES_AT_KEY = 'fitlife_expires_at';
   private readonly USER_ID_KEY = 'fitlife_user_id';
   private readonly USER_EMAIL_KEY = 'fitlife_user_email';
   private readonly USER_NAME_KEY = 'fitlife_user_name';
@@ -9,36 +9,11 @@ class TokenManager {
   saveTokens(accessToken: string, refreshToken: string, expiresIn: number): void {
     if (typeof window === 'undefined') return;
     
-    const expiryTime = Date.now() + (expiresIn * 1000);
+    const expiresAt = Date.now() + (expiresIn * 1000);
     
     localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
-    localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
-  }
-
-  getAccessToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    
-    const token = localStorage.getItem(this.ACCESS_TOKEN_KEY);
-    const expiryTime = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
-    
-    if (token && expiryTime && Date.now() < parseInt(expiryTime)) {
-      return token;
-    }
-    
-    return null;
-  }
-
-  getRefreshToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
-  }
-
-  isTokenValid(): boolean {
-    if (typeof window === 'undefined') return false;
-    
-    const expiryTime = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
-    return expiryTime ? Date.now() < parseInt(expiryTime) : false;
+    localStorage.setItem(this.EXPIRES_AT_KEY, expiresAt.toString());
   }
 
   saveUserInfo(userId: number, email: string, name: string): void {
@@ -49,9 +24,18 @@ class TokenManager {
     localStorage.setItem(this.USER_NAME_KEY, name);
   }
 
+  getAccessToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(this.ACCESS_TOKEN_KEY);
+  }
+
+  getRefreshToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
   getUserId(): number | null {
     if (typeof window === 'undefined') return null;
-    
     const userId = localStorage.getItem(this.USER_ID_KEY);
     return userId ? parseInt(userId) : null;
   }
@@ -66,19 +50,32 @@ class TokenManager {
     return localStorage.getItem(this.USER_NAME_KEY);
   }
 
+  isTokenExpired(): boolean {
+    if (typeof window === 'undefined') return true;
+    
+    const expiresAt = localStorage.getItem(this.EXPIRES_AT_KEY);
+    if (!expiresAt) return true;
+    
+    return Date.now() >= parseInt(expiresAt);
+  }
+
+  isLoggedIn(): boolean {
+    return this.hasValidToken();
+  }
+
   clearTokens(): void {
     if (typeof window === 'undefined') return;
     
     localStorage.removeItem(this.ACCESS_TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-    localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
+    localStorage.removeItem(this.EXPIRES_AT_KEY);
     localStorage.removeItem(this.USER_ID_KEY);
     localStorage.removeItem(this.USER_EMAIL_KEY);
     localStorage.removeItem(this.USER_NAME_KEY);
   }
 
-  isLoggedIn(): boolean {
-    return this.getAccessToken() !== null && this.isTokenValid();
+  hasValidToken(): boolean {
+    return this.getAccessToken() !== null && !this.isTokenExpired();
   }
 }
 
