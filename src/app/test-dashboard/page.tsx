@@ -98,9 +98,9 @@ const TestDashboardPage: React.FC = () => {
               <Typography variant="subtitle2">User Details from useAuth:</Typography>
               <Typography>ID: {user.id}</Typography>
               <Typography>Email: {user.email}</Typography>
-              <Typography>Height: {user.height}</Typography>
-              <Typography>Current Weight: {user.currentWeight}</Typography>
-              <Typography>BMI: {user.bmi}</Typography>
+              <Typography>Height: {user.height}cm</Typography>
+              <Typography>Current Weight: {user.currentWeight}kg</Typography>
+              <Typography>Target Weight: {user.targetWeight}kg</Typography>
             </Box>
           )}
           <Box sx={{ mt: 2 }}>

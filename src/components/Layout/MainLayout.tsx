@@ -34,6 +34,7 @@ import {
   MonetizationOn,
   CameraAlt,
   VideoCall,
+  Add,
 } from '@mui/icons-material';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -47,11 +48,14 @@ const menuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
   { text: 'Ejercicios', icon: <FitnessCenter />, path: '/exercise' },
   { text: 'Nutrición', icon: <Restaurant />, path: '/nutrition' },
+  { text: 'Agregar Comida', icon: <Add />, path: '/add-food' },
+  { text: 'Plan Nutricional', icon: <Restaurant />, path: '/nutrition-plan' },
   { text: 'Social', icon: <People />, path: '/social' },
   { text: 'Recompensas', icon: <EmojiEvents />, path: '/gamification', badge: 2 },
   { text: 'Creador', icon: <MonetizationOn />, path: '/creator' },
   { text: 'Mensajes', icon: <Email />, path: '/messages', badge: 3 },
   { text: 'Perfil', icon: <Person />, path: '/profile' },
+  { text: '🔧 Test Login', icon: <Person />, path: '/test-login' },
 ];
 
 const cameraItems = [

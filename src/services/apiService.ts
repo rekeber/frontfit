@@ -173,13 +173,15 @@ class ApiService {
 
   // Food
   async searchFoods(query: string, page = 0, size = 20): Promise<AxiosResponse<FoodSearchResponse>> {
-    return this.api.get('/foods/search', {
+    // Usar endpoint público para búsqueda de alimentos
+    return axios.get(`/api/v1/public/foods/search`, {
       params: { query, page, size }
     });
   }
 
   async getFoodById(foodId: number): Promise<AxiosResponse<any>> {
-    return this.api.get(`/foods/${foodId}`);
+    // Usar endpoint público para obtener alimento por ID
+    return axios.get(`/api/v1/public/foods/${foodId}`);
   }
 
   // Nutrition
