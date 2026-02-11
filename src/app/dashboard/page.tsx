@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/useAuth';
 import MainLayout from '@/components/Layout/MainLayout';
 import QuickAccessCards from '@/components/Dashboard/QuickAccessCards';
 import { apiService } from '@/services/apiService';
+import { dataIntegrationService } from '@/services/dataIntegrationService';
 import { DashboardStats, DailyNutritionSummary, RecentActivity } from '@/types/dashboard';
 
 const DashboardPage: React.FC = () => {
@@ -133,10 +134,16 @@ const DashboardPage: React.FC = () => {
     }
 
     try {
-      console.log('Attempting to update water intake on server...');
-      await apiService.logWaterIntake(glasses);
+      console.log('Attempting to update water intake...');
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Use integrated data service
+      await dataIntegrationService.updateWaterIntake(glasses, today, user.id);
       setWaterIntake(glasses);
-      console.log(`Agua actualizada en servidor: ${glasses} vasos`);
+      console.log(`Agua actualizada: ${glasses} vasos`);
+      
+      // Reload dashboard data to reflect changes
+      await loadDashboardData();
     } catch (err: any) {
       console.error('Error updating water intake:', err);
       console.error('Error details:', err.response?.data || err.message);
@@ -218,25 +225,44 @@ const DashboardPage: React.FC = () => {
           <strong>Debug Info:</strong><br/>
           Usuario detectado: {user ? `Sí (${user.name})` : 'No'}<br/>
           Token disponible: {typeof window !== 'undefined' && localStorage.getItem('fitlife_access_token') ? 'Sí' : 'No'}<br/>
-          <Button 
-            size="small" 
-            onClick={() => {
-              console.log('=== DEBUG INFO ===');
-              console.log('User object:', user);
-              console.log('Access token:', typeof window !== 'undefined' ? localStorage.getItem('fitlife_access_token') : 'N/A');
-              console.log('Refresh token:', typeof window !== 'undefined' ? localStorage.getItem('fitlife_refresh_token') : 'N/A');
-              console.log('User ID:', typeof window !== 'undefined' ? localStorage.getItem('fitlife_user_id') : 'N/A');
-              console.log('==================');
-            }}
-          >
-            Ver Debug en Consola
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+            <Button 
+              size="small" 
+              onClick={() => {
+                console.log('=== DEBUG INFO ===');
+                console.log('User object:', user);
+                console.log('Access token:', typeof window !== 'undefined' ? localStorage.getItem('fitlife_access_token') : 'N/A');
+                console.log('Refresh token:', typeof window !== 'undefined' ? localStorage.getItem('fitlife_refresh_token') : 'N/A');
+                console.log('User ID:', typeof window !== 'undefined' ? localStorage.getItem('fitlife_user_id') : 'N/A');
+                console.log('==================');
+              }}
+            >
+              Ver Debug en Consola
+            </Button>
+            <Button 
+              size="small" 
+              onClick={async () => {
+                const today = new Date().toISOString().split('T')[0];
+                const debugInfo = await dataIntegrationService.debugDataSources(today, user?.id);
+                console.log('=== DATA SOURCES DEBUG ===');
+                console.log(debugInfo);
+                alert(`Datos encontrados:\nAPI: ${debugInfo.sources.api.entries}\nIntegrado: ${debugInfo.sources.integrated.entries}\nLegacy: ${debugInfo.sources.legacy.entries}\nFinal: ${debugInfo.finalData?.foodEntries?.length || 0}`);
+              }}
+            >
+              Debug Datos de Comida
+            </Button>
+          </Box>
         </Alert>
         
         <Grid container spacing={3}>
           {/* Welcome Card */}
           <Grid item xs={12}>
             <WelcomeCard userName={user?.name || 'Usuario'} />
+          </Grid>
+
+          {/* Enhanced Integration Summary */}
+          <Grid item xs={12}>
+            <EnhancedIntegrationCard user={user} />
           </Grid>
 
           {/* Quick Access Cards - NEW AI & Gamification Features */}
@@ -827,6 +853,231 @@ const AchievementsCard: React.FC<{ stats: DashboardStats | null }> = ({ stats })
             </Grid>
           ))}
         </Grid>
+      </CardContent>
+    </Card>
+  );
+};
+
+const EnhancedIntegrationCard: React.FC<{ user: any }> = ({ user }) => {
+  const [integratedData, setIntegratedData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadIntegratedData = async () => {
+      try {
+        setLoading(true);
+        const today = new Date().toISOString().split('T')[0];
+        console.log('=== ENHANCED INTEGRATION CARD DEBUG ===');
+        console.log('Loading integrated data for:', today);
+        console.log('User:', user);
+        
+        const data = await dataIntegrationService.getDailyIntegratedData(today, user?.id);
+        console.log('Integrated data loaded:', data);
+        console.log('Food entries:', data?.foodEntries?.length || 0);
+        console.log('Exercise entries:', data?.exerciseEntries?.length || 0);
+        console.log('==========================================');
+        
+        setIntegratedData(data);
+      } catch (error) {
+        console.error('Error loading integrated data:', error);
+        // Set empty data structure on error
+        setIntegratedData({
+          date: new Date().toISOString().split('T')[0],
+          foodEntries: [],
+          exerciseEntries: [],
+          totalCaloriesConsumed: 0,
+          totalCaloriesBurned: 0,
+          netCalories: 0,
+          macros: { protein: 0, carbs: 0, fat: 0, fiber: 0 },
+          mealBreakdown: {
+            DESAYUNO: { entries: [], calories: 0, status: 'low', message: 'Sin datos' },
+            ALMUERZO: { entries: [], calories: 0, status: 'low', message: 'Sin datos' },
+            CENA: { entries: [], calories: 0, status: 'low', message: 'Sin datos' },
+            SNACK: { entries: [], calories: 0, status: 'low', message: 'Sin datos' }
+          },
+          waterIntake: 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadIntegratedData();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent>
+          <Skeleton variant="text" width="60%" height={32} />
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            {[1, 2, 3, 4].map((i) => (
+              <Grid item xs={6} sm={3} key={i}>
+                <Skeleton variant="rectangular" height={80} />
+              </Grid>
+            ))}
+          </Grid>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!integratedData) {
+    return (
+      <Card>
+        <CardContent>
+          <Alert severity="warning">
+            No se pudieron cargar los datos integrados. Intenta recargar la página.
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const mealTypes = [
+    { key: 'DESAYUNO', label: 'Desayuno', icon: '🌅', color: '#4CAF50' },
+    { key: 'ALMUERZO', label: 'Almuerzo', icon: '☀️', color: '#FF9800' },
+    { key: 'CENA', label: 'Cena', icon: '🌙', color: '#2196F3' },
+    { key: 'SNACK', label: 'Snack', icon: '🍪', color: '#9C27B0' }
+  ];
+
+  return (
+    <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+      <CardContent>
+        <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: 'white' }}>
+          📊 Resumen Integrado de Hoy
+        </Typography>
+        
+        <Grid container spacing={3}>
+          {/* Calories Summary */}
+          <Grid item xs={12} md={3}>
+            <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>
+                {Math.round(integratedData.netCalories || 0)}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                Calorías netas
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                {Math.round(integratedData.totalCaloriesConsumed || 0)} consumidas - {Math.round(integratedData.totalCaloriesBurned || 0)} quemadas
+              </Typography>
+            </Box>
+          </Grid>
+
+          {/* Exercise Summary */}
+          <Grid item xs={12} md={3}>
+            <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>
+                {(integratedData.exerciseEntries || []).length}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                Ejercicios
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                {(integratedData.exerciseEntries || []).reduce((sum: number, ex: any) => sum + (ex.duration || 0), 0)} minutos totales
+              </Typography>
+            </Box>
+          </Grid>
+
+          {/* Water Summary */}
+          <Grid item xs={12} md={3}>
+            <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>
+                {integratedData.waterIntake || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                Vasos de agua
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                Meta: 8 vasos
+              </Typography>
+            </Box>
+          </Grid>
+
+          {/* Macros Summary */}
+          <Grid item xs={12} md={3}>
+            <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 1 }}>
+                Macronutrientes
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'white' }}>
+                P: {Math.round((integratedData.macros?.protein || 0))}g
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'white' }}>
+                C: {Math.round((integratedData.macros?.carbs || 0))}g
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'white' }}>
+                G: {Math.round((integratedData.macros?.fat || 0))}g
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+
+        {/* Meal Status */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ color: 'white' }}>
+            Estado de Comidas
+          </Typography>
+          <Grid container spacing={2}>
+            {mealTypes.map((meal) => {
+              const mealData = integratedData.mealBreakdown?.[meal.key] || { 
+                calories: 0, 
+                status: 'low', 
+                message: 'Sin datos' 
+              };
+              const statusColor = mealData.status === 'good' ? '#4CAF50' : 
+                                mealData.status === 'low' ? '#FF9800' : 
+                                mealData.status === 'high' ? '#F44336' : '#2196F3';
+              
+              return (
+                <Grid item xs={6} sm={3} key={meal.key}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 1, 
+                    bgcolor: 'rgba(255,255,255,0.1)', 
+                    borderRadius: 1,
+                    border: `2px solid ${statusColor}`
+                  }}>
+                    <Typography variant="body2" sx={{ color: 'white' }}>
+                      {meal.icon} {meal.label}
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" sx={{ color: 'white' }}>
+                      {Math.round(mealData.calories || 0)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: statusColor }}>
+                      {mealData.message}
+                    </Typography>
+                  </Box>
+                </Grid>
+              );
+            })}
+          </Grid>
+        </Box>
+
+        {/* Quick Actions */}
+        <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Button 
+            variant="contained" 
+            sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
+            href="/nutrition"
+          >
+            Gestionar Alimentos
+          </Button>
+          <Button 
+            variant="contained" 
+            sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
+            href="/exercise"
+          >
+            Gestionar Ejercicios
+          </Button>
+          <Button 
+            variant="outlined" 
+            sx={{ borderColor: 'white', color: 'white' }}
+            href="/nutrition-plan"
+          >
+            Ver Plan Nutricional
+          </Button>
+        </Box>
       </CardContent>
     </Card>
   );

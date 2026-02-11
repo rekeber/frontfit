@@ -44,18 +44,19 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-const menuItems = [
+const mainMenuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-  { text: 'Ejercicios', icon: <FitnessCenter />, path: '/exercise' },
-  { text: 'Nutrición', icon: <Restaurant />, path: '/nutrition' },
-  { text: 'Agregar Comida', icon: <Add />, path: '/add-food' },
-  { text: 'Plan Nutricional', icon: <Restaurant />, path: '/nutrition-plan' },
   { text: 'Social', icon: <People />, path: '/social' },
   { text: 'Recompensas', icon: <EmojiEvents />, path: '/gamification', badge: 2 },
   { text: 'Creador', icon: <MonetizationOn />, path: '/creator' },
   { text: 'Mensajes', icon: <Email />, path: '/messages', badge: 3 },
   { text: 'Perfil', icon: <Person />, path: '/profile' },
-  { text: '🔧 Test Login', icon: <Person />, path: '/test-login' },
+];
+
+const featureItems = [
+  { text: '🍎 Nutrición', icon: <Restaurant />, path: '/nutrition' },
+  { text: '💪 Ejercicios', icon: <FitnessCenter />, path: '/exercise' },
+  { text: '📊 Plan Nutricional', icon: <Restaurant />, path: '/nutrition-plan' },
 ];
 
 const cameraItems = [
@@ -111,7 +112,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
       {/* Navigation Menu */}
       <List sx={{ flex: 1, px: 1 }}>
-        {menuItems.map((item) => (
+        {mainMenuItems.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
             <ListItemButton
               onClick={() => handleNavigation(item.path)}
@@ -137,6 +138,47 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 )}
               </ListItemIcon>
               <ListItemText primary={item.text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+
+      <Divider />
+
+      {/* Features Section */}
+      <Box sx={{ px: 2, py: 1 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+          🎯 FEATURES
+        </Typography>
+      </Box>
+      <List sx={{ px: 1 }}>
+        {featureItems.map((item) => (
+          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              onClick={() => handleNavigation(item.path)}
+              sx={{
+                borderRadius: 2,
+                mx: 1,
+                bgcolor: 'info.light',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'info.main',
+                  '& .MuiListItemIcon-root': {
+                    color: 'white',
+                  },
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'white',
+                },
+              }}
+            >
+              <ListItemIcon>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText 
+                primary={item.text}
+                primaryTypographyProps={{ fontSize: '0.875rem' }}
+              />
             </ListItemButton>
           </ListItem>
         ))}

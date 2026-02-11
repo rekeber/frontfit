@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/hooks/useAuth';
+import { dataIntegrationService, IntegratedFoodEntry } from '@/services/dataIntegrationService';
 
 interface Food {
   id: number;
@@ -53,7 +54,7 @@ interface FoodEntry {
 
 const AddFoodPage: React.FC = () => {
   const { user } = useAuth();
-  const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
+  const [foodEntries, setFoodEntries] = useState<IntegratedFoodEntry[]>([]);
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [quantity, setQuantity] = useState<number>(100);
   const [mealType, setMealType] = useState<string>('DESAYUNO');
@@ -62,6 +63,8 @@ const AddFoodPage: React.FC = () => {
   const [customProtein, setCustomProtein] = useState<number>(0);
   const [customCarbs, setCustomCarbs] = useState<number>(0);
   const [customFat, setCustomFat] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Alimentos comunes predefinidos
   const commonFoods: Food[] = [
@@ -87,82 +90,125 @@ const AddFoodPage: React.FC = () => {
   ];
 
   useEffect(() => {
-    // Cargar entradas guardadas del localStorage
-    const savedEntries = localStorage.getItem('fitlife_food_entries');
-    if (savedEntries) {
-      setFoodEntries(JSON.parse(savedEntries));
-    }
-  }, []);
+    loadTodayEntries();
+  }, [user]);
 
-  const saveEntries = (entries: FoodEntry[]) => {
-    localStorage.setItem('fitlife_food_entries', JSON.stringify(entries));
-    setFoodEntries(entries);
+  const loadTodayEntries = async () => {
+    try {
+      setLoading(true);
+      console.log('=== LOAD TODAY ENTRIES DEBUG ===');
+      const today = new Date().toISOString().split('T')[0];
+      console.log('Loading entries for date:', today);
+      console.log('User ID:', user?.id);
+      
+      const integratedData = await dataIntegrationService.getDailyIntegratedData(today, user?.id);
+      console.log('Integrated data received:', integratedData);
+      console.log('Food entries count:', integratedData?.foodEntries?.length || 0);
+      
+      // Ensure we always set an array
+      const entries = Array.isArray(integratedData?.foodEntries) ? integratedData.foodEntries : [];
+      setFoodEntries(entries);
+      console.log('Food entries set in state:', entries.length);
+      console.log('================================');
+    } catch (error: any) {
+      console.error('Error loading food entries:', error);
+      const errorMessage = `Error al cargar alimentos: ${error.message || error}`;
+      setError(errorMessage);
+      // Set empty array on error
+      setFoodEntries([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const addFoodEntry = () => {
+  const addFoodEntry = async () => {
     if (!selectedFood && !customFoodName) return;
 
-    const food = selectedFood || {
-      id: Date.now(),
-      name: customFoodName,
-      caloriesPer100g: customCalories,
-      proteinPer100g: customProtein,
-      carbsPer100g: customCarbs,
-      fatPer100g: customFat,
-      fiberPer100g: 0
-    };
+    try {
+      setLoading(true);
+      console.log('=== ADD FOOD ENTRY UI DEBUG ===');
+      
+      const food = selectedFood || {
+        id: Date.now(),
+        name: customFoodName,
+        caloriesPer100g: customCalories,
+        proteinPer100g: customProtein,
+        carbsPer100g: customCarbs,
+        fatPer100g: customFat,
+        fiberPer100g: 0
+      };
 
-    const entry: FoodEntry = {
-      id: Date.now(),
-      food,
-      quantity,
-      mealType,
-      totalCalories: (food.caloriesPer100g * quantity) / 100,
-      totalProtein: (food.proteinPer100g * quantity) / 100,
-      totalCarbs: (food.carbsPer100g * quantity) / 100,
-      totalFat: (food.fatPer100g * quantity) / 100,
-      createdAt: new Date().toISOString()
-    };
+      const today = new Date().toISOString().split('T')[0];
 
-    const newEntries = [...foodEntries, entry];
-    saveEntries(newEntries);
+      console.log('Food to add:', food);
+      console.log('Quantity:', quantity);
+      console.log('Meal type:', mealType);
+      console.log('Date:', today);
+      console.log('User:', user);
 
-    // Reset form
-    setSelectedFood(null);
-    setQuantity(100);
-    setCustomFoodName('');
-    setCustomCalories(0);
-    setCustomProtein(0);
-    setCustomCarbs(0);
-    setCustomFat(0);
+      // Use integrated data service
+      await dataIntegrationService.addFoodEntry({
+        food: food,
+        quantity: quantity,
+        mealType: mealType,
+        date: today
+      }, user?.id);
+
+      console.log('Food entry added successfully, reloading entries...');
+
+      // Reload entries
+      await loadTodayEntries();
+
+      // Reset form
+      setSelectedFood(null);
+      setQuantity(100);
+      setCustomFoodName('');
+      setCustomCalories(0);
+      setCustomProtein(0);
+      setCustomCarbs(0);
+      setCustomFat(0);
+      
+      console.log('Form reset and entries reloaded');
+      console.log('===============================');
+    } catch (error: any) {
+      console.error('Error adding food entry:', error);
+      const errorMessage = `Error al agregar alimento: ${error.message || 'Error desconocido'}`;
+      setError(errorMessage);
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteFoodEntry = (entryId: number) => {
-    const newEntries = foodEntries.filter(entry => entry.id !== entryId);
-    saveEntries(newEntries);
+  const deleteFoodEntry = async (entryId: number) => {
+    try {
+      await dataIntegrationService.deleteFoodEntry(entryId, user?.id);
+      await loadTodayEntries();
+    } catch (error) {
+      console.error('Error deleting food entry:', error);
+    }
   };
 
   const getTodayEntries = () => {
-    const today = new Date().toDateString();
-    return foodEntries.filter(entry => 
-      new Date(entry.createdAt).toDateString() === today
-    );
+    return Array.isArray(foodEntries) ? foodEntries : []; // Ensure it's always an array
   };
 
   const getMealEntries = (mealType: string) => {
-    return getTodayEntries().filter(entry => entry.mealType === mealType);
+    const entries = getTodayEntries();
+    return entries.filter(entry => entry.mealType === mealType);
   };
 
   const getTotalCalories = () => {
-    return getTodayEntries().reduce((total, entry) => total + entry.totalCalories, 0);
+    const entries = getTodayEntries();
+    return entries.reduce((total, entry) => total + (entry.calories || 0), 0);
   };
 
   const getTotalMacros = () => {
     const entries = getTodayEntries();
     return {
-      protein: entries.reduce((total, entry) => total + entry.totalProtein, 0),
-      carbs: entries.reduce((total, entry) => total + entry.totalCarbs, 0),
-      fat: entries.reduce((total, entry) => total + entry.totalFat, 0),
+      protein: entries.reduce((total, entry) => total + (entry.protein || 0), 0),
+      carbs: entries.reduce((total, entry) => total + (entry.carbs || 0), 0),
+      fat: entries.reduce((total, entry) => total + (entry.fat || 0), 0),
     };
   };
 
@@ -190,9 +236,33 @@ const AddFoodPage: React.FC = () => {
           Registra tus comidas manualmente (datos guardados localmente)
         </Typography>
 
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Esta es una versión de prueba que guarda los datos localmente. Los datos se sincronizarán con el servidor cuando esté disponible.
+        <Alert severity="success" sx={{ mb: 3 }}>
+          ✅ Ahora integrado con el sistema principal. Los datos se sincronizan automáticamente con Dashboard y Gestión de Alimentos.
+          <Box sx={{ mt: 1 }}>
+            <Button 
+              size="small" 
+              onClick={async () => {
+                const today = new Date().toISOString().split('T')[0];
+                console.log('=== DEBUG BUTTON CLICKED ===');
+                console.log('Current food entries state:', foodEntries);
+                console.log('LocalStorage keys:');
+                console.log('- fitlife_food_entries:', localStorage.getItem('fitlife_food_entries'));
+                console.log('- fitlife_integrated_food_entries:', localStorage.getItem('fitlife_integrated_food_entries'));
+                
+                const debugInfo = await dataIntegrationService.debugDataSources(today, user?.id);
+                alert(`Debug Info:\nLegacy: ${debugInfo.sources.legacy.entries}\nIntegrated: ${debugInfo.sources.integrated.entries}\nAPI: ${debugInfo.sources.api.entries}\nFinal: ${debugInfo.finalData?.foodEntries?.length || 0}`);
+              }}
+            >
+              🔧 Debug Datos
+            </Button>
+          </Box>
         </Alert>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
         <Grid container spacing={3}>
           {/* Formulario de agregar alimento */}
@@ -313,10 +383,10 @@ const AddFoodPage: React.FC = () => {
                     variant="contained"
                     startIcon={<Add />}
                     onClick={addFoodEntry}
-                    disabled={!selectedFood && !customFoodName}
+                    disabled={(!selectedFood && !customFoodName) || loading}
                     fullWidth
                   >
-                    Agregar Alimento
+                    {loading ? 'Agregando...' : 'Agregar Alimento'}
                   </Button>
                 </Box>
               </CardContent>
@@ -375,7 +445,7 @@ const AddFoodPage: React.FC = () => {
 
                 {mealTypes.map((meal) => {
                   const entries = getMealEntries(meal.value);
-                  const calories = entries.reduce((total, entry) => total + entry.totalCalories, 0);
+                  const calories = entries.reduce((total, entry) => total + entry.calories, 0);
                   
                   return (
                     <Box key={meal.value} sx={{ mb: 2 }}>
@@ -401,16 +471,16 @@ const AddFoodPage: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Alimentos de Hoy ({getTodayEntries().length})
+                  Alimentos de Hoy ({foodEntries.length})
                 </Typography>
 
-                {getTodayEntries().length === 0 ? (
+                {foodEntries.length === 0 ? (
                   <Alert severity="info">
                     No has registrado alimentos hoy. ¡Comienza agregando tu primera comida!
                   </Alert>
                 ) : (
                   <List>
-                    {getTodayEntries().map((entry) => (
+                    {foodEntries.map((entry) => (
                       <ListItem key={entry.id}>
                         <ListItemText
                           primary={
@@ -428,10 +498,10 @@ const AddFoodPage: React.FC = () => {
                           }
                           secondary={
                             <Typography variant="body2" color="text.secondary">
-                              {entry.quantity}g - {Math.round(entry.totalCalories)} cal | 
-                              P: {Math.round(entry.totalProtein)}g | 
-                              C: {Math.round(entry.totalCarbs)}g | 
-                              G: {Math.round(entry.totalFat)}g
+                              {entry.quantity}g - {Math.round(entry.calories)} cal | 
+                              P: {Math.round(entry.protein)}g | 
+                              C: {Math.round(entry.carbs)}g | 
+                              G: {Math.round(entry.fat)}g
                             </Typography>
                           }
                         />
@@ -455,14 +525,21 @@ const AddFoodPage: React.FC = () => {
                     startIcon={<Restaurant />}
                     href="/nutrition"
                   >
-                    Ver Página Principal
+                    Gestión de Alimentos
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Restaurant />}
+                    href="/nutrition"
+                  >
+                    Ver Nutrición
                   </Button>
                   <Button
                     variant="outlined"
                     startIcon={<LocalDrink />}
                     href="/dashboard"
                   >
-                    Registrar Agua
+                    Dashboard
                   </Button>
                 </Box>
               </CardContent>
