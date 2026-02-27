@@ -181,6 +181,10 @@ class DataIntegrationService {
     console.log('User ID:', userId);
     
     try {
+      // CRITICAL: Normalize date to YYYY-MM-DD format ALWAYS
+      const normalizedDate = entry.date.split('T')[0];
+      console.log('Date normalized from', entry.date, 'to', normalizedDate);
+      
       // Calculate nutritional values
       const calories = (entry.food.caloriesPer100g * entry.quantity) / 100;
       const protein = (entry.food.proteinPer100g * entry.quantity) / 100;
@@ -191,6 +195,7 @@ class DataIntegrationService {
       const fullEntry: IntegratedFoodEntry = {
         ...entry,
         id: Date.now(),
+        date: normalizedDate, // Use normalized date
         calories,
         protein,
         carbs,
@@ -239,11 +244,16 @@ class DataIntegrationService {
     console.log('User ID:', userId);
     
     try {
+      // CRITICAL: Normalize date to YYYY-MM-DD format ALWAYS
+      const normalizedDate = entry.date.split('T')[0];
+      console.log('Date normalized from', entry.date, 'to', normalizedDate);
+      
       const caloriesBurned = entry.exercise.caloriesPerMinute * entry.duration;
       
       const fullEntry: IntegratedExerciseEntry = {
         ...entry,
         id: Date.now(),
+        date: normalizedDate, // Use normalized date
         caloriesBurned
       };
 
@@ -319,7 +329,30 @@ class DataIntegrationService {
       const stored = localStorage.getItem(this.STORAGE_KEYS.FOOD_ENTRIES);
       if (stored) {
         const allEntries: IntegratedFoodEntry[] = JSON.parse(stored);
-        entries = allEntries.filter(entry => entry.date === date);
+        
+        // CRITICAL: Normalize ALL dates in storage to YYYY-MM-DD format
+        let needsUpdate = false;
+        allEntries.forEach(entry => {
+          if (entry.date.includes('T')) {
+            entry.date = entry.date.split('T')[0];
+            needsUpdate = true;
+          }
+        });
+        
+        // Save back if we normalized any dates
+        if (needsUpdate) {
+          console.log('⚠️ Normalized dates in food entries, saving back to localStorage');
+          localStorage.setItem(this.STORAGE_KEYS.FOOD_ENTRIES, JSON.stringify(allEntries));
+        }
+        
+        // Normalize dates for comparison (YYYY-MM-DD format)
+        const targetDate = date.split('T')[0]; // Ensure we only compare date part
+        entries = allEntries.filter(entry => {
+          const entryDate = entry.date.split('T')[0]; // Normalize entry date
+          return entryDate === targetDate;
+        });
+        
+        console.log(`Filtered ${entries.length} food entries for date ${targetDate} from ${allEntries.length} total entries`);
       }
 
       // If no entries found, try to migrate from legacy storage
@@ -433,8 +466,32 @@ class DataIntegrationService {
       if (!stored) return [];
       
       const allEntries: IntegratedExerciseEntry[] = JSON.parse(stored);
-      const targetDate = new Date(date).toDateString();
-      return allEntries.filter(entry => new Date(entry.date).toDateString() === targetDate);
+      
+      // CRITICAL: Normalize ALL dates in storage to YYYY-MM-DD format
+      let needsUpdate = false;
+      allEntries.forEach(entry => {
+        if (entry.date.includes('T')) {
+          entry.date = entry.date.split('T')[0];
+          needsUpdate = true;
+        }
+      });
+      
+      // Save back if we normalized any dates
+      if (needsUpdate) {
+        console.log('⚠️ Normalized dates in exercise entries, saving back to localStorage');
+        localStorage.setItem(this.STORAGE_KEYS.EXERCISE_ENTRIES, JSON.stringify(allEntries));
+      }
+      
+      // Normalize dates for comparison (YYYY-MM-DD format)
+      const targetDate = date.split('T')[0]; // Ensure we only compare date part
+      const filteredEntries = allEntries.filter(entry => {
+        const entryDate = entry.date.split('T')[0]; // Normalize entry date
+        return entryDate === targetDate;
+      });
+      
+      console.log(`Filtered ${filteredEntries.length} exercise entries for date ${targetDate} from ${allEntries.length} total entries`);
+      
+      return filteredEntries;
     } catch (error) {
       console.error('Error reading local exercise entries:', error);
       return [];
@@ -517,7 +574,7 @@ class DataIntegrationService {
    * Debug method to check data sources
    */
   async debugDataSources(date: string, userId?: number): Promise<any> {
-    const debugInfo = {
+    const debugInfo: any = {
       date,
       userId,
       sources: {

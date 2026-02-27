@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitLife - Debug de Datos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #667eea;
+        }
+        h2 {
+            color: #764ba2;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #764ba2;
+        }
+        .button.danger {
+            background: #f44336;
+        }
+        .button.danger:hover {
+            background: #d32f2f;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border-left: 4px solid #667eea;
+        }
+        .stat {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .warning {
+            background: #ff9800;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .date-match {
+            background: #4caf50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .date-mismatch {
+            background: #f44336;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 FitLife - Herramienta de Depuración de Datos</h1>
+    
+    <div class="container">
+        <h2>📅 Información de Fecha</h2>
+        <div id="dateInfo"></div>
+    </div>
+
+    <div class="container">
+        <h2>🍎 Datos de Comida (localStorage)</h2>
+        <button class="button" onclick="loadFoodData()">Cargar Datos</button>
+        <button class="button" onclick="filterTodayFood()">Filtrar Solo Hoy</button>
+        <button class="button danger" onclick="clearFoodData()">Limpiar Datos</button>
+        <div id="foodData"></div>
+    </div>
+
+    <div class="container">
+        <h2>💪 Datos de Ejercicio (localStorage)</h2>
+        <button class="button" onclick="loadExerciseData()">Cargar Datos</button>
+        <button class="button" onclick="filterTodayExercise()">Filtrar Solo Hoy</button>
+        <button class="button danger" onclick="clearExerciseData()">Limpiar Datos</button>
+        <div id="exerciseData"></div>
+    </div>
+
+    <div class="container">
+        <h2>💧 Datos de Agua (localStorage)</h2>
+        <button class="button" onclick="loadWaterData()">Cargar Datos</button>
+        <button class="button danger" onclick="clearWaterData()">Limpiar Datos</button>
+        <div id="waterData"></div>
+    </div>
+
+    <div class="container">
+        <h2>👤 Datos de Usuario</h2>
+        <button class="button" onclick="loadUserData()">Cargar Datos</button>
+        <div id="userData"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔧 Acciones de Mantenimiento</h2>
+        <button class="button" onclick="fixDates()">Corregir Formato de Fechas</button>
+        <button class="button" onclick="migrateData()">Migrar Datos Legacy</button>
+        <button class="button danger" onclick="clearAllData()">Limpiar TODO (⚠️ Peligroso)</button>
+        <div id="maintenanceResult"></div>
+    </div>
+
+    <script>
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Mostrar información de fecha
+        function showDateInfo() {
+            const now = new Date();
+            const info = `
+                <div class="stat">Fecha de Hoy: ${today}</div>
+                <div class="stat">Hora Actual: ${now.toLocaleTimeString('es-ES')}</div>
+                <div class="stat">Timestamp: ${now.getTime()}</div>
+            `;
+            document.getElementById('dateInfo').innerHTML = info;
+        }
+
+        // Cargar datos de comida
+        function loadFoodData() {
+            const stored = localStorage.getItem('fitlife_integrated_food_entries');
+            const legacy = localStorage.getItem('fitlife_food_entries');
+            
+            let html = '';
+            
+            if (stored) {
+                const entries = JSON.parse(stored);
+                html += `<div class="success">✅ Encontrados ${entries.length} registros integrados</div>`;
+                html += '<h3>Registros Integrados:</h3>';
+                html += '<table><tr><th>ID</th><th>Alimento</th><th>Cantidad</th><th>Calorías</th><th>Comida</th><th>Fecha</th><th>¿Hoy?</th></tr>';
+                
+                entries.forEach(entry => {
+                    const entryDate = entry.date.split('T')[0];
+                    const isToday = entryDate === today;
+                    html += `<tr>
+                        <td>${entry.id}</td>
+                        <td>${entry.food.name}</td>
+                        <td>${entry.quantity}g</td>
+                        <td>${Math.round(entry.calories)} cal</td>
+                        <td>${entry.mealType}</td>
+                        <td>${entry.date}</td>
+                        <td><span class="${isToday ? 'date-match' : 'date-mismatch'}">${isToday ? 'SÍ' : 'NO'}</span></td>
+                    </tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<div class="warning">⚠️ No hay datos integrados</div>';
+            }
+            
+            if (legacy) {
+                const entries = JSON.parse(legacy);
+                html += `<div class="warning">⚠️ Encontrados ${entries.length} registros legacy (antiguos)</div>`;
+                html += '<p>Estos datos deberían migrarse al formato nuevo.</p>';
+            }
+            
+            document.getElementById('foodData').innerHTML = html;
+        }
+
+        // Filtrar solo datos de hoy
+        function filterTodayFood() {
+            const stored = localStorage.getItem('fitlife_integrated_food_entries');
+            if (!stored) {
+                document.getElementById('foodData').innerHTML = '<div class="error">❌ No hay datos para filtrar</div>';
+                return;
+            }
+            
+            const entries = JSON.parse(stored);
+            const todayEntries = entries.filter(entry => {
+                const entryDate = entry.date.split('T')[0];
+                return entryDate === today;
+            });
+            
+            let html = `<div class="success">✅ Encontrados ${todayEntries.length} registros de hoy (de ${entries.length} totales)</div>`;
+            
+            if (todayEntries.length > 0) {
+                html += '<h3>Registros de Hoy:</h3>';
+                html += '<table><tr><th>Alimento</th><th>Cantidad</th><th>Calorías</th><th>Comida</th><th>Hora</th></tr>';
+                
+                todayEntries.forEach(entry => {
+                    const time = new Date(entry.date).toLocaleTimeString('es-ES');
+                    html += `<tr>
+                        <td>${entry.food.name}</td>
+                        <td>${entry.quantity}g</td>
+                        <td>${Math.round(entry.calories)} cal</td>
+                        <td>${entry.mealType}</td>
+                        <td>${time}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                
+                const totalCalories = todayEntries.reduce((sum, e) => sum + e.calories, 0);
+                html += `<div class="stat">Total Calorías Hoy: ${Math.round(totalCalories)} cal</div>`;
+            }
+            
+            document.getElementById('foodData').innerHTML = html;
+        }
+
+        // Cargar datos de ejercicio
+        function loadExerciseData() {
+            const stored = localStorage.getItem('fitlife_integrated_exercise_entries');
+            
+            let html = '';
+            
+            if (stored) {
+                const entries = JSON.parse(stored);
+                html += `<div class="success">✅ Encontrados ${entries.length} registros de ejercicio</div>`;
+                html += '<h3>Registros de Ejercicio:</h3>';
+                html += '<table><tr><th>ID</th><th>Ejercicio</th><th>Duración</th><th>Calorías</th><th>Fecha</th><th>¿Hoy?</th></tr>';
+                
+                entries.forEach(entry => {
+                    const entryDate = entry.date.split('T')[0];
+                    const isToday = entryDate === today;
+                    html += `<tr>
+                        <td>${entry.id}</td>
+                        <td>${entry.exercise.name}</td>
+                        <td>${entry.duration} min</td>
+                        <td>${Math.round(entry.caloriesBurned)} cal</td>
+                        <td>${entry.date}</td>
+                        <td><span class="${isToday ? 'date-match' : 'date-mismatch'}">${isToday ? 'SÍ' : 'NO'}</span></td>
+                    </tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<div class="warning">⚠️ No hay datos de ejercicio</div>';
+            }
+            
+            document.getElementById('exerciseData').innerHTML = html;
+        }
+
+        // Filtrar ejercicios de hoy
+        function filterTodayExercise() {
+            const stored = localStorage.getItem('fitlife_integrated_exercise_entries');
+            if (!stored) {
+                document.getElementById('exerciseData').innerHTML = '<div class="error">❌ No hay datos para filtrar</div>';
+                return;
+            }
+            
+            const entries = JSON.parse(stored);
+            const todayEntries = entries.filter(entry => {
+                const entryDate = entry.date.split('T')[0];
+                return entryDate === today;
+            });
+            
+            let html = `<div class="success">✅ Encontrados ${todayEntries.length} ejercicios de hoy (de ${entries.length} totales)</div>`;
+            
+            if (todayEntries.length > 0) {
+                html += '<h3>Ejercicios de Hoy:</h3>';
+                html += '<table><tr><th>Ejercicio</th><th>Duración</th><th>Calorías</th><th>Hora</th></tr>';
+                
+                todayEntries.forEach(entry => {
+                    const time = new Date(entry.date).toLocaleTimeString('es-ES');
+                    html += `<tr>
+                        <td>${entry.exercise.name}</td>
+                        <td>${entry.duration} min</td>
+                        <td>${Math.round(entry.caloriesBurned)} cal</td>
+                        <td>${time}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                
+                const totalCalories = todayEntries.reduce((sum, e) => sum + e.caloriesBurned, 0);
+                html += `<div class="stat">Total Calorías Quemadas Hoy: ${Math.round(totalCalories)} cal</div>`;
+            }
+            
+            document.getElementById('exerciseData').innerHTML = html;
+        }
+
+        // Cargar datos de agua
+        function loadWaterData() {
+            const stored = localStorage.getItem('fitlife_integrated_water_intake');
+            
+            let html = '';
+            
+            if (stored) {
+                const waterData = JSON.parse(stored);
+                const dates = Object.keys(waterData);
+                html += `<div class="success">✅ Encontrados datos de ${dates.length} días</div>`;
+                html += '<table><tr><th>Fecha</th><th>Vasos</th><th>¿Hoy?</th></tr>';
+                
+                dates.forEach(date => {
+                    const isToday = date === today;
+                    html += `<tr>
+                        <td>${date}</td>
+                        <td>${waterData[date]} vasos</td>
+                        <td><span class="${isToday ? 'date-match' : 'date-mismatch'}">${isToday ? 'SÍ' : 'NO'}</span></td>
+                    </tr>`;
+                });
+                html += '</table>';
+                
+                if (waterData[today]) {
+                    html += `<div class="stat">Agua Hoy: ${waterData[today]} vasos</div>`;
+                }
+            } else {
+                html += '<div class="warning">⚠️ No hay datos de agua</div>';
+            }
+            
+            document.getElementById('waterData').innerHTML = html;
+        }
+
+        // Cargar datos de usuario
+        function loadUserData() {
+            const stored = localStorage.getItem('fitlife_user');
+            
+            let html = '';
+            
+            if (stored) {
+                const user = JSON.parse(stored);
+                html += '<div class="success">✅ Usuario encontrado</div>';
+                html += '<pre>' + JSON.stringify(user, null, 2) + '</pre>';
+            } else {
+                html += '<div class="warning">⚠️ No hay usuario en localStorage</div>';
+            }
+            
+            document.getElementById('userData').innerHTML = html;
+        }
+
+        // Corregir formato de fechas
+        function fixDates() {
+            let fixed = 0;
+            let html = '';
+            
+            // Corregir fechas de comida
+            const foodStored = localStorage.getItem('fitlife_integrated_food_entries');
+            if (foodStored) {
+                const entries = JSON.parse(foodStored);
+                entries.forEach(entry => {
+                    if (!entry.date.includes('T')) {
+                        // Ya está en formato correcto
+                    } else {
+                        // Normalizar a YYYY-MM-DD
+                        entry.date = entry.date.split('T')[0];
+                        fixed++;
+                    }
+                });
+                localStorage.setItem('fitlife_integrated_food_entries', JSON.stringify(entries));
+            }
+            
+            // Corregir fechas de ejercicio
+            const exerciseStored = localStorage.getItem('fitlife_integrated_exercise_entries');
+            if (exerciseStored) {
+                const entries = JSON.parse(exerciseStored);
+                entries.forEach(entry => {
+                    if (!entry.date.includes('T')) {
+                        // Ya está en formato correcto
+                    } else {
+                        // Normalizar a YYYY-MM-DD
+                        entry.date = entry.date.split('T')[0];
+                        fixed++;
+                    }
+                });
+                localStorage.setItem('fitlife_integrated_exercise_entries', JSON.stringify(entries));
+            }
+            
+            html = `<div class="success">✅ Se corrigieron ${fixed} fechas</div>`;
+            document.getElementById('maintenanceResult').innerHTML = html;
+        }
+
+        // Migrar datos legacy
+        function migrateData() {
+            const legacy = localStorage.getItem('fitlife_food_entries');
+            if (!legacy) {
+                document.getElementById('maintenanceResult').innerHTML = '<div class="warning">⚠️ No hay datos legacy para migrar</div>';
+                return;
+            }
+            
+            const legacyEntries = JSON.parse(legacy);
+            const integrated = localStorage.getItem('fitlife_integrated_food_entries');
+            const integratedEntries = integrated ? JSON.parse(integrated) : [];
+            
+            let migrated = 0;
+            legacyEntries.forEach(entry => {
+                // Convertir a formato integrado
+                const newEntry = {
+                    id: entry.id || Date.now() + migrated,
+                    food: entry.food,
+                    quantity: entry.quantity || 100,
+                    mealType: entry.mealType || 'SNACK',
+                    calories: entry.totalCalories || 0,
+                    protein: entry.totalProtein || 0,
+                    carbs: entry.totalCarbs || 0,
+                    fat: entry.totalFat || 0,
+                    fiber: 0,
+                    date: entry.createdAt ? entry.createdAt.split('T')[0] : today
+                };
+                
+                // Verificar que no exista ya
+                if (!integratedEntries.find(e => e.id === newEntry.id)) {
+                    integratedEntries.push(newEntry);
+                    migrated++;
+                }
+            });
+            
+            localStorage.setItem('fitlife_integrated_food_entries', JSON.stringify(integratedEntries));
+            
+            document.getElementById('maintenanceResult').innerHTML = `<div class="success">✅ Se migraron ${migrated} registros</div>`;
+        }
+
+        // Limpiar datos específicos
+        function clearFoodData() {
+            if (confirm('¿Estás seguro de que quieres eliminar TODOS los datos de comida?')) {
+                localStorage.removeItem('fitlife_integrated_food_entries');
+                localStorage.removeItem('fitlife_food_entries');
+                document.getElementById('foodData').innerHTML = '<div class="success">✅ Datos de comida eliminados</div>';
+            }
+        }
+
+        function clearExerciseData() {
+            if (confirm('¿Estás seguro de que quieres eliminar TODOS los datos de ejercicio?')) {
+                localStorage.removeItem('fitlife_integrated_exercise_entries');
+                document.getElementById('exerciseData').innerHTML = '<div class="success">✅ Datos de ejercicio eliminados</div>';
+            }
+        }
+
+        function clearWaterData() {
+            if (confirm('¿Estás seguro de que quieres eliminar TODOS los datos de agua?')) {
+                localStorage.removeItem('fitlife_integrated_water_intake');
+                document.getElementById('waterData').innerHTML = '<div class="success">✅ Datos de agua eliminados</div>';
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ PELIGRO: Esto eliminará TODOS los datos de localStorage. ¿Estás ABSOLUTAMENTE seguro?')) {
+                if (confirm('Última confirmación: ¿Eliminar TODO?')) {
+                    localStorage.clear();
+                    document.getElementById('maintenanceResult').innerHTML = '<div class="error">❌ TODOS los datos han sido eliminados</div>';
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                }
+            }
+        }
+
+        // Inicializar
+        showDateInfo();
+        loadFoodData();
+        loadExerciseData();
+        loadWaterData();
+        loadUserData();
+    </script>
+</body>
+</html>

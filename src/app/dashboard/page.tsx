@@ -48,6 +48,18 @@ const DashboardPage: React.FC = () => {
     if (!authLoading) {
       loadDashboardData();
     }
+
+    // Listen for profile updates
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('Profile updated, reloading dashboard data...');
+      loadDashboardData();
+    };
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    };
   }, [user, authLoading]); // Add authLoading as dependency
 
   const loadDashboardData = async () => {

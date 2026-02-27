@@ -103,7 +103,24 @@ export const useAuth = () => {
 
     // Add a small delay to prevent flash of loading state
     const timer = setTimeout(checkAuthStatus, 100);
-    return () => clearTimeout(timer);
+    
+    // Listen for profile updates from other pages
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('Profile update event received in useAuth:', event.detail);
+      if (event.detail) {
+        setAuthState(prev => ({
+          ...prev,
+          user: event.detail,
+        }));
+      }
+    };
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    };
   }, []);
 
   const login = useCallback(async (credentials: LoginRequest) => {

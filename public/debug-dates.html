@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Dates - FitLife</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug de Fechas - FitLife</h1>
+    
+    <div class="section">
+        <h2>Fecha Actual</h2>
+        <p>Fecha del sistema: <strong id="systemDate"></strong></p>
+        <p>Fecha ISO: <strong id="isoDate"></strong></p>
+        <p>Fecha YYYY-MM-DD: <strong id="formattedDate"></strong></p>
+    </div>
+
+    <div class="section">
+        <h2>Datos en LocalStorage</h2>
+        <button onclick="checkFoodData()">Ver Datos de Comida</button>
+        <button onclick="checkExerciseData()">Ver Datos de Ejercicio</button>
+        <button onclick="clearAllData()">Limpiar Todos los Datos</button>
+        <pre id="dataOutput"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Filtrado de Datos</h2>
+        <button onclick="testFiltering()">Probar Filtrado</button>
+        <pre id="filterOutput"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Acciones</h2>
+        <button onclick="fixDates()">Corregir Fechas</button>
+        <button onclick="addTestData()">Agregar Datos de Prueba</button>
+        <pre id="actionOutput"></pre>
+    </div>
+
+    <script>
+        // Show current date
+        const now = new Date();
+        document.getElementById('systemDate').textContent = now.toString();
+        document.getElementById('isoDate').textContent = now.toISOString();
+        document.getElementById('formattedDate').textContent = now.toISOString().split('T')[0];
+
+        function checkFoodData() {
+            const data = localStorage.getItem('fitlife_integrated_food_entries');
+            const output = document.getElementById('dataOutput');
+            
+            if (!data) {
+                output.textContent = 'No hay datos de comida guardados.';
+                return;
+            }
+
+            const entries = JSON.parse(data);
+            output.textContent = `Total de entradas: ${entries.length}\n\n`;
+            
+            entries.forEach((entry, index) => {
+                output.textContent += `Entrada ${index + 1}:\n`;
+                output.textContent += `  ID: ${entry.id}\n`;
+                output.textContent += `  Comida: ${entry.food.name}\n`;
+                output.textContent += `  Fecha: ${entry.date}\n`;
+                output.textContent += `  Fecha normalizada: ${entry.date.split('T')[0]}\n`;
+                output.textContent += `  Calorías: ${entry.calories}\n\n`;
+            });
+        }
+
+        function checkExerciseData() {
+            const data = localStorage.getItem('fitlife_integrated_exercise_entries');
+            const output = document.getElementById('dataOutput');
+            
+            if (!data) {
+                output.textContent = 'No hay datos de ejercicio guardados.';
+                return;
+            }
+
+            const entries = JSON.parse(data);
+            output.textContent = `Total de entradas: ${entries.length}\n\n`;
+            
+            entries.forEach((entry, index) => {
+                output.textContent += `Entrada ${index + 1}:\n`;
+                output.textContent += `  ID: ${entry.id}\n`;
+                output.textContent += `  Ejercicio: ${entry.exercise.name}\n`;
+                output.textContent += `  Fecha: ${entry.date}\n`;
+                output.textContent += `  Fecha normalizada: ${entry.date.split('T')[0]}\n`;
+                output.textContent += `  Calorías: ${entry.caloriesBurned}\n\n`;
+            });
+        }
+
+        function testFiltering() {
+            const today = new Date().toISOString().split('T')[0];
+            const output = document.getElementById('filterOutput');
+            
+            // Test food filtering
+            const foodData = localStorage.getItem('fitlife_integrated_food_entries');
+            const exerciseData = localStorage.getItem('fitlife_integrated_exercise_entries');
+            
+            output.textContent = `Filtrando para fecha: ${today}\n\n`;
+            
+            if (foodData) {
+                const allFood = JSON.parse(foodData);
+                const todayFood = allFood.filter(entry => {
+                    const entryDate = entry.date.split('T')[0];
+                    return entryDate === today;
+                });
+                
+                output.textContent += `Comidas:\n`;
+                output.textContent += `  Total: ${allFood.length}\n`;
+                output.textContent += `  Hoy: ${todayFood.length}\n\n`;
+                
+                if (todayFood.length > 0) {
+                    output.textContent += `Comidas de hoy:\n`;
+                    todayFood.forEach(entry => {
+                        output.textContent += `  - ${entry.food.name}: ${entry.calories} cal\n`;
+                    });
+                }
+            }
+            
+            if (exerciseData) {
+                const allExercise = JSON.parse(exerciseData);
+                const todayExercise = allExercise.filter(entry => {
+                    const entryDate = entry.date.split('T')[0];
+                    return entryDate === today;
+                });
+                
+                output.textContent += `\nEjercicios:\n`;
+                output.textContent += `  Total: ${allExercise.length}\n`;
+                output.textContent += `  Hoy: ${todayExercise.length}\n\n`;
+                
+                if (todayExercise.length > 0) {
+                    output.textContent += `Ejercicios de hoy:\n`;
+                    todayExercise.forEach(entry => {
+                        output.textContent += `  - ${entry.exercise.name}: ${entry.caloriesBurned} cal\n`;
+                    });
+                }
+            }
+        }
+
+        function fixDates() {
+            const output = document.getElementById('actionOutput');
+            let fixed = 0;
+            
+            // Fix food dates
+            const foodData = localStorage.getItem('fitlife_integrated_food_entries');
+            if (foodData) {
+                const entries = JSON.parse(foodData);
+                entries.forEach(entry => {
+                    if (!entry.date.includes('T')) {
+                        entry.date = entry.date + 'T00:00:00.000Z';
+                        fixed++;
+                    }
+                });
+                localStorage.setItem('fitlife_integrated_food_entries', JSON.stringify(entries));
+            }
+            
+            // Fix exercise dates
+            const exerciseData = localStorage.getItem('fitlife_integrated_exercise_entries');
+            if (exerciseData) {
+                const entries = JSON.parse(exerciseData);
+                entries.forEach(entry => {
+                    if (!entry.date.includes('T')) {
+                        entry.date = entry.date + 'T00:00:00.000Z';
+                        fixed++;
+                    }
+                });
+                localStorage.setItem('fitlife_integrated_exercise_entries', JSON.stringify(entries));
+            }
+            
+            output.textContent = `✅ Se corrigieron ${fixed} fechas.\nRecarga la aplicación para ver los cambios.`;
+        }
+
+        function addTestData() {
+            const today = new Date().toISOString().split('T')[0];
+            const output = document.getElementById('actionOutput');
+            
+            // Add test food
+            const foodData = localStorage.getItem('fitlife_integrated_food_entries');
+            const foodEntries = foodData ? JSON.parse(foodData) : [];
+            
+            foodEntries.push({
+                id: Date.now(),
+                food: {
+                    id: 1,
+                    name: 'Manzana de Prueba',
+                    caloriesPer100g: 52,
+                    proteinPer100g: 0.3,
+                    carbsPer100g: 14,
+                    fatPer100g: 0.2,
+                    fiberPer100g: 2.4
+                },
+                quantity: 100,
+                mealType: 'SNACK',
+                calories: 52,
+                protein: 0.3,
+                carbs: 14,
+                fat: 0.2,
+                fiber: 2.4,
+                date: today
+            });
+            
+            localStorage.setItem('fitlife_integrated_food_entries', JSON.stringify(foodEntries));
+            
+            // Add test exercise
+            const exerciseData = localStorage.getItem('fitlife_integrated_exercise_entries');
+            const exerciseEntries = exerciseData ? JSON.parse(exerciseData) : [];
+            
+            exerciseEntries.push({
+                id: Date.now() + 1,
+                exercise: {
+                    id: 1,
+                    name: 'Correr de Prueba',
+                    category: 'Cardio',
+                    caloriesPerMinute: 10,
+                    icon: '🏃‍♂️'
+                },
+                duration: 30,
+                caloriesBurned: 300,
+                date: today
+            });
+            
+            localStorage.setItem('fitlife_integrated_exercise_entries', JSON.stringify(exerciseEntries));
+            
+            output.textContent = `✅ Se agregaron datos de prueba para hoy (${today}).\nRecarga la aplicación para verlos.`;
+        }
+
+        function clearAllData() {
+            if (confirm('¿Estás seguro de que quieres eliminar TODOS los datos?')) {
+                localStorage.removeItem('fitlife_integrated_food_entries');
+                localStorage.removeItem('fitlife_integrated_exercise_entries');
+                localStorage.removeItem('fitlife_integrated_water_intake');
+                localStorage.removeItem('fitlife_food_entries'); // Legacy
+                localStorage.removeItem('fitlife_exercise_entries'); // Legacy
+                
+                document.getElementById('dataOutput').textContent = '✅ Todos los datos han sido eliminados.';
+            }
+        }
+    </script>
+</body>
+</html>

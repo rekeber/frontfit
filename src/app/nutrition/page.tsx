@@ -104,6 +104,20 @@ const NutritionPage: React.FC = () => {
     } else {
       setLoading(false);
     }
+
+    // Listen for profile updates
+    const handleProfileUpdate = () => {
+      console.log('Profile updated, reloading nutrition data...');
+      if (user) {
+        loadNutritionData();
+      }
+    };
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    };
   }, [user]);
 
   const loadNutritionData = async () => {

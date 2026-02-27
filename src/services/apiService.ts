@@ -105,34 +105,41 @@ class ApiService {
         
         const originalRequest = error.config;
 
+        // Only try to refresh token once per request
         if (error.response?.status === 401 && !originalRequest._retry) {
-          console.log('401 error, attempting token refresh...');
+          console.log('401 error detected');
           originalRequest._retry = true;
 
-          try {
-            const refreshToken = tokenManager.getRefreshToken();
-            if (refreshToken) {
-              console.log('Refresh token available, refreshing...');
-              const response = await this.refreshToken(refreshToken);
-              tokenManager.saveTokens(
-                response.data.accessToken,
-                response.data.refreshToken,
-                response.data.expiresIn
-              );
-              
-              // Retry original request with new token
-              originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
-              console.log('Token refreshed, retrying original request...');
-              return this.api(originalRequest);
-            } else {
-              console.log('No refresh token available');
+          const refreshToken = tokenManager.getRefreshToken();
+          if (!refreshToken) {
+            console.log('No refresh token available, redirecting to login');
+            tokenManager.clearTokens();
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
             }
+            return Promise.reject(error);
+          }
+
+          try {
+            console.log('Attempting token refresh...');
+            const response = await this.refreshToken(refreshToken);
+            tokenManager.saveTokens(
+              response.data.accessToken,
+              response.data.refreshToken,
+              response.data.expiresIn
+            );
+            
+            // Retry original request with new token
+            originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
+            console.log('Token refreshed successfully, retrying original request');
+            return this.api(originalRequest);
           } catch (refreshError) {
             console.error('Token refresh failed:', refreshError);
             tokenManager.clearTokens();
             if (typeof window !== 'undefined') {
               window.location.href = '/login';
             }
+            return Promise.reject(refreshError);
           }
         }
 
